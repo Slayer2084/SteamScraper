@@ -1,5 +1,8 @@
 import scrapy
 import re
+import datetime
+import pytz
+
 
 
 def get_cookies_for_forum(forum_id: str) -> dict:
@@ -32,11 +35,11 @@ class SteamSpider(scrapy.Spider):
         'RETRY_ENABLED': True,
         'RETRY_TIMES': 5,
         'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter',
-        'FEEDS': {'data.json': {'format': 'json'}},
     }
 
     def __init__(self, query: str = "climate+change", **kwargs):
         self.url_stream = f"https://steamcommunity.com/discussions/forum/search/?q={query}&sort=time&p="
+        self.custom_settings["FEEDS"] = {f"{query}_{datetime.datetime.now(pytz.timezone("Europe/Berlin"))}": {'format': 'json'}}
         super().__init__(**kwargs)
 
     def start_requests(self):
