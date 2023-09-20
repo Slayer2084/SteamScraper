@@ -4,7 +4,6 @@ import datetime
 import pytz
 
 
-
 def get_cookies_for_forum(forum_id: str) -> dict:
     cookies = {"wants_mature_content_apps": forum_id}
     return cookies
@@ -39,7 +38,7 @@ class SteamSpider(scrapy.Spider):
 
     def __init__(self, query: str = "climate+change", **kwargs):
         self.url_stream = f"https://steamcommunity.com/discussions/forum/search/?q={query}&sort=time&p="
-        self.custom_settings["FEEDS"] = {f"{query}_{datetime.datetime.now(pytz.timezone("Europe/Berlin"))}": {'format': 'json'}}
+        self.custom_settings["FEEDS"] = {f"{query}_{datetime.datetime.now(pytz.timezone('Europe/Berlin'))}": {'format': 'json'}}
         super().__init__(**kwargs)
 
     def start_requests(self):
