@@ -12,7 +12,7 @@ def print_(item):
 def main():
     crawler = CrawlerProcess()
     dispatcher.connect(print_, signal=signals.item_passed)
-    crawler.crawl(SteamSpider, "climate+change")
+    crawler.crawl(SteamSpider, "klimawandel")
     crawler.start()
 
 
