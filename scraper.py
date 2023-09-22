@@ -64,10 +64,16 @@ class SteamSpider(scrapy.Spider):
             url = re.split("#c.*", url)[0]
             cookies = get_cookies_for_forum(forum_id)
             yield scrapy.Request(url, cookies=cookies, callback=self.find_comments_page,
-                                 meta={"id": id_, "base_url": url, "page": 1, "forum_id": forum_id})
+                                 meta={"id": id_, "base_url": url, "page": 1, "forum_id": forum_id, "max_pages": None,
+                                       "beginning": 1})
 
     def find_comments_page(self, response):
         url = response.url
+        max_pages = response.meta["max_pages"]
+        if max_pages is None:
+            max_pages = (int(response.xpath("//span[contains(@id, 'pagetotal')]//text()")
+                             .get().replace(",", "")) // 15) + 1
+        beginning = response.meta["beginning"]
         id_ = response.meta["id"]
         base_url = response.meta["base_url"]
         page = response.meta["page"]
@@ -75,25 +81,33 @@ class SteamSpider(scrapy.Spider):
         print(url, id_)
         cookies = get_cookies_for_forum(forum_id)
         if id_ == "op":
-            yield scrapy.Request(base_url, cookies=cookies,
-                                 callback=self.parse_post, meta={"id": id_})
+            yield self.parse_post(response, id_)
         else:
             div_id = "comment_" + id_
             post = response.xpath(f'//div[@id="{div_id}"]').get()
-            new_page = page + 1
-            if not post:
+            if post:
+                yield self.parse_post(response, id_)
+            else:
+                # get id of first comment
+                first_comment_id = re.search("_[0-9]*",
+                                             re.search('id="comment_[0-9]*',
+                                                       response.css(".commentthread_comment").get())[0])[0][1:]
+                if id_ > first_comment_id:
+                    new_page = (page + max_pages) // 2
+                    beginning = page
+                elif id_ < first_comment_id:
+                    new_page = (beginning + page) // 2
+                    max_pages = page
+                else:
+                    pass
                 yield scrapy.Request(f"{base_url}?ctp={new_page}", cookies=cookies,
                                      callback=self.find_comments_page,
-                                     meta={"id": id_, "base_url": base_url, "page": new_page, "forum_id": forum_id})
-            else:
-                yield scrapy.Request(f"{base_url}?ctp={page}&success=True", cookies=cookies,
-                                     callback=self.parse_post, meta={"id": id_})
+                                     meta={"id": id_, "base_url": base_url, "page": new_page, "forum_id": forum_id,
+                                           "max_pages": max_pages, "beginning": beginning})
 
     @staticmethod
-    def parse_post(response):
+    def parse_post(response, id_):
         op = False
-        meta = response.meta
-        id_ = meta["id"]
         if id_ == "op":
             op = True
         if op:
@@ -113,7 +127,7 @@ class SteamSpider(scrapy.Spider):
             time = post.css(".commentthread_comment_timestamp ::attr(data-timestamp)").get()
         forum = response.css(".breadcrumbs a:nth-child(1) ::text").get()
         body_url = response.url
-        yield {
+        return {
             "forum": forum,
             "author": author,
             "author_url": author_url,
