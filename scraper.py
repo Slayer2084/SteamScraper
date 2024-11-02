@@ -32,10 +32,10 @@ class SteamSpider(scrapy.Spider):
         'RETRY_ENABLED': True,
         'RETRY_TIMES': 5,
         'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter',
-        'FEEDS': {"test.json": {'format': 'json', "encoding": "utf-8"}}
+        'FEEDS': {"data.json": {'format': 'json', "encoding": "utf-8"}}
     }
 
-    def __init__(self, query: str = "climate+change", **kwargs):
+    def __init__(self, query, **kwargs):
         self.url_stream = f"https://steamcommunity.com/discussions/forum/search/?q={query}&sort=time&p="
         super().__init__(**kwargs)
 
@@ -72,7 +72,6 @@ class SteamSpider(scrapy.Spider):
         base_url = response.meta["base_url"]
         page = response.meta["page"]
         forum_id = response.meta["forum_id"]
-        print(url, id_)
         cookies = get_cookies_for_forum(forum_id)
         if id_ == "op":
             yield scrapy.Request(base_url, cookies=cookies,
