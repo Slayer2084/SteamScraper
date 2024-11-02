@@ -20,8 +20,8 @@ if __name__ == "__main__":
     import os
     import sys
 
-    if os.path.exists("data/data.json"):
-        os.remove("data/data.json")
+    if os.path.exists("data.json"):
+        os.remove("data.json")
 
     if len(sys.argv) > 1:
         search_term = sys.argv[1]
